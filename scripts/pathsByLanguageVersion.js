@@ -1,14 +1,14 @@
-'use strict'
+'use strict';
 
-var esNextPaths = [
-  'src/*.js'
-]
+const esNextPaths = [
+  'src/*.js',
+];
 
-var es5Paths = [
-  'scripts/*.js'
-]
+const es5Paths = [
+  'scripts/*.js',
+];
 
 module.exports = {
   esNextPaths,
-  es5Paths
-}
+  es5Paths,
+};
