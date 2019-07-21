@@ -1,6 +1,10 @@
 {
   "name": "mini-react",
+  "private": true,
   "version": "1.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
   "devEngines": {
     "node": "8.x || 9.x || 10.x || 11.x || 12.x"
   },
@@ -36,14 +40,18 @@
     "eslint-plugin-no-for-of-loops": "^1.0.0",
     "eslint-plugin-react": "^7.14.2",
     "filesize": "^4.1.2",
+    "google-closure-compiler": "^20190709.0.0",
+    "gzip-size": "^5.1.1",
     "minimatch": "^3.0.4",
+    "rimraf": "^2.6.3",
     "rollup": "^1.16.7",
     "rollup-plugin-babel": "3",
     "rollup-plugin-commonjs": "^10.0.1",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-prettier": "^0.6.0",
     "rollup-plugin-replace": "^2.2.0",
-    "rollup-plugin-strip-banner": "^0.2.0"
+    "rollup-plugin-strip-banner": "^0.2.0",
+    "tmp": "^0.1.0"
   },
   "scripts": {
     "linc": "node ./scripts/tasks/linc.js",

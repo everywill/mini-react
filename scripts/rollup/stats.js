@@ -99,6 +99,7 @@ function printResults() {
 }
 
 module.exports = {
+  currentBuildResults,
   saveResults,
   printResults,
 };
