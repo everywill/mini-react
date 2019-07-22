@@ -64,7 +64,7 @@ class CompositeComponent {
   }
 
   receive(nextElement) {
-    const prevProps = this.currentElement.props;
+    // const prevProps = this.currentElement.props;
     const publicInstance = this.publicInstance;
     const prevRenderedComponent = this.renderedComponent;
     const prevRenderedElement = prevRenderedComponent.currentElement;

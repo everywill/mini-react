@@ -1,7 +1,8 @@
 'use strict';
 
 const esNextPaths = [
-  'src/*.js',
+  'packages/*/*.js',
+  'packages/*/src/**/*.js',
 ];
 
 const es5Paths = [

@@ -1,4 +1,5 @@
 import instantiateComponent from './instantiateReactCompoenent';
+import { TEXT_ELEMENT } from './element';
 
 class DOMComponent {
   constructor(element) {
@@ -25,14 +26,21 @@ class DOMComponent {
       children = [children];
     }
 
-    const node = document.createElement(type);
-    this.node = node;
+    let node;
 
-    Object.keys(props).forEach(propName => {
-      if (propName !== 'children') {
-        node.setAttribute(propName, props[propName]);
-      }
-    });
+    if (type === 'TEXT_ELEMENT') {
+      node = document.createTextNode(props.nodeValue);
+    } else {
+      node = document.createElement(type);
+
+      Object.keys(props).forEach(propName => {
+        if (propName !== 'children') {
+          node.setAttribute(propName, props[propName]);
+        }
+      });
+    }
+
+    this.node = node;
 
     const renderedChildren = children.map(instantiateComponent);
     this.renderedChildren = renderedChildren;
@@ -67,12 +75,12 @@ class DOMComponent {
       }
     });
 
-    const prevChildren = prevProps.children || [];
+    let prevChildren = prevProps.children || [];
     if (!Array.isArray(prevChildren)) {
       prevChildren = [prevChildren];
     }
 
-    const nextChildren = nextProps.children || [];
+    let nextChildren = nextProps.children || [];
     if (!Array.isArray(nextChildren)) {
       nextChildren = [nextChildren];
     }
@@ -110,30 +118,30 @@ class DOMComponent {
 
       prevChild.receive(nextChildren[i]);
       nextRenderedChildren.push(prevChild);
+    }
 
-      for (let j = nextChildren.length; j < prevChildren.length; j++) {
-        const prevChild = prevRenderedChildren[j];
-        const node = prevChild.getHostNode();
-        prevChild.unmount();
+    for (let j = nextChildren.length; j < prevChildren.length; j++) {
+      const prevChild = prevRenderedChildren[j];
+      const node = prevChild.getHostNode();
+      prevChild.unmount();
 
-        operationQueue.push({ type: 'REMOVE', node });
-      }
+      operationQueue.push({ type: 'REMOVE', node });
+    }
 
-      this.renderedChildren = nextRenderedChildren;
+    this.renderedChildren = nextRenderedChildren;
 
-      while (operationQueue.length > 0) {
-        const operation = operationQueue.shift();
-        switch (operation.type) {
-          case 'ADD':
-            this.node.appendChild(operation.node);
-            break;
-          case 'REPLACE':
-            this.node.replaceChild(operation.nextNode, operation.prevNode);
-            break;
-          case 'REMOVE':
-            this.node.removeChild(operation.node);
-            break;
-        }
+    while (operationQueue.length > 0) {
+      const operation = operationQueue.shift();
+      switch (operation.type) {
+        case 'ADD':
+          this.node.appendChild(operation.node);
+          break;
+        case 'REPLACE':
+          this.node.replaceChild(operation.nextNode, operation.prevNode);
+          break;
+        case 'REMOVE':
+          this.node.removeChild(operation.node);
+          break;
       }
     }
   }

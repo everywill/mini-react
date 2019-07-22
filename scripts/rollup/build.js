@@ -9,6 +9,7 @@ const sizes = require('./plugins/sizes-plugin');
 const Stats = require('./stats');
 const { asyncRimRaf } = require('./utils');
 const Wrappers = require('./wrappers');
+const Packaging = require('./packaging');
 
 const closureOptions = {
   compilation_level: 'SIMPLE',
@@ -48,7 +49,12 @@ function handleRollupWarning(warning) {
   }
 }
 
-function handleRollupError(error) {}
+function handleRollupError(error) {
+  if (!error.code) {
+    console.error(error);
+    return;
+  }
+}
 
 async function createBundle(bundle, bundleType) {
   let resolvedEntry = require.resolve('mini-react');
@@ -104,8 +110,14 @@ async function createBundle(bundle, bundleType) {
     ].filter(Boolean);
   }
 
-  function getRollupOutputOptions() {
-    return {};
+  function getRollupOutputOptions(outputPath) {
+    return {
+      file: outputPath,
+      format: 'umd',
+      interop: false,
+      name: 'MiniReact',
+      sourcemap: false,
+    };
   }
 
   const rollupConfig = {
@@ -115,7 +127,19 @@ async function createBundle(bundle, bundleType) {
     plugins: getPlugins(),
   };
 
-  const rollupOutputOptions = getRollupOutputOptions();
+  const [mainOutputPath] = Packaging.getBundleOutputPaths()
+
+  const rollupOutputOptions = getRollupOutputOptions(mainOutputPath);
+
+  console.log(`${chalk.bgYellow.black(' BUILDING ')}`);
+  try {
+    const result = await rollup.rollup(rollupConfig);
+    await result.write(rollupOutputOptions);
+  } catch(error) {
+    console.log(`${chalk.bgRed.black('OH NOES! ')}`);
+    handleRollupError(error);
+    throw error;
+  }
 }
 
 async function buildEverything() {
