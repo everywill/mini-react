@@ -1,4 +1,5 @@
 import instantiateComponent from './instantiateReactCompoenent';
+import { set as setInstance } from './ReactInstanceMap';
 
 function isClass(type) {
   return (
@@ -45,10 +46,18 @@ class CompositeComponent {
 
     this.publicInstance = publicInstance;
 
+    setInstance(publicInstance, this);
+
     const renderedComponent = instantiateComponent(renderedElement);
     this.renderedComponent = renderedComponent;
 
-    return renderedComponent.mount();
+    const markUp = renderedComponent.mount();
+
+    if (publicInstance.componentDidMount) {
+      publicInstance.componentDidMount();
+    }
+
+    return markUp;
   }
 
   unmount() {
@@ -64,41 +73,82 @@ class CompositeComponent {
   }
 
   receive(nextElement) {
+    this._rendering = true;
+
     // const prevProps = this.currentElement.props;
     const publicInstance = this.publicInstance;
     const prevRenderedComponent = this.renderedComponent;
     const prevRenderedElement = prevRenderedComponent.currentElement;
+
+    const willReceive = this.currentElement !== nextElement;
 
     this.currentElement = nextElement;
     const type = nextElement.type;
     const nextProps = nextElement.props;
 
     let nextRenderedElement;
-    if (isClass(type)) {
-      if (publicInstance.componentWillUpdate) {
-        publicInstance.componentWillUpdate(nextProps);
+
+    if (willReceive && publicInstance.componentWillReceiveProps) {
+      publicInstance.componentWillReceiveProps(nextProps);
+    }
+
+    let shouldUpdate = true;
+    const nextState = this._processPendingState();
+    this._pendingPartialState = null;
+
+    if (publicInstance.shouldComponentUpdate) {
+      shouldUpdate = publicInstance.shouldComponentUpdate(nextProps, nextState);
+    }
+
+    if (shouldUpdate) {
+      if (isClass(type)) {
+        if (publicInstance.componentWillUpdate) {
+          publicInstance.componentWillUpdate(nextProps);
+        }
+
+        publicInstance.props = nextProps;
+        publicInstance.state = nextState;
+        nextRenderedElement = publicInstance.render();
+      } else if (typeof type === 'function') {
+        nextRenderedElement = type(nextProps);
       }
 
+      if (prevRenderedElement.type === nextRenderedElement.type) {
+        prevRenderedComponent.receive(nextRenderedElement);
+        return;
+      }
+
+      const prevNode = prevRenderedComponent.getHostNode();
+
+      prevRenderedComponent.unmount();
+      const nextRenderedComponent = instantiateComponent(nextRenderedElement);
+      const nextNode = nextRenderedComponent.mount();
+
+      this.renderedComponent = nextRenderedComponent;
+
+      prevNode.parentNode.replaceChild(nextNode, prevNode);
+    } else {
       publicInstance.props = nextProps;
-      nextRenderedElement = publicInstance.render();
-    } else if (typeof type === 'function') {
-      nextRenderedElement = type(nextProps);
+      publicInstance.state = nextState;
     }
 
-    if (prevRenderedElement.type === nextRenderedElement.type) {
-      prevRenderedComponent.receive(nextRenderedElement);
-      return;
+    this._rendering = false;
+  }
+
+  _processPendingState() {
+    const publicInstance = this.publicInstance;
+    if (!this._pendingPartialState) {
+      return publicInstance.state;
     }
 
-    const prevNode = prevRenderedComponent.getHostNode();
+    let nextState = publicInstance.state;
 
-    prevRenderedComponent.unmount();
-    const nextRenderedComponent = instantiateComponent(nextRenderedElement);
-    const nextNode = nextRenderedComponent.mount();
+    for (let i = 0; i < this._pendingPartialState.length; i++) {
+      nextState = Object.assign(nextState, this._pendingPartialState[i]);
+    }
 
-    this.renderedComponent = nextRenderedComponent;
-
-    prevNode.parentNode.replaceChild(nextNode, prevNode);
+    this._pendingPartialState = null;
+    return nextState;
   }
 }
 

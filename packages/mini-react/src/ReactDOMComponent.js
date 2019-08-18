@@ -13,7 +13,7 @@ class DOMComponent {
   }
 
   getHostNode() {
-    return this.node();
+    return this.node;
   }
 
   mount() {
@@ -95,9 +95,9 @@ class DOMComponent {
 
       if (!prevChild) {
         const nextChild = instantiateComponent(nextChildren[i]);
-        const node = nextChild.mount();
+        const newNode = nextChild.mount();
 
-        operationQueue.push({ type: 'ADD', node });
+        operationQueue.push({ type: 'ADD', newNode });
         nextRenderedChildren.push(nextChild);
         continue;
       }
@@ -122,10 +122,10 @@ class DOMComponent {
 
     for (let j = nextChildren.length; j < prevChildren.length; j++) {
       const prevChild = prevRenderedChildren[j];
-      const node = prevChild.getHostNode();
+      const oldNode = prevChild.getHostNode();
       prevChild.unmount();
 
-      operationQueue.push({ type: 'REMOVE', node });
+      operationQueue.push({ type: 'REMOVE', oldNode });
     }
 
     this.renderedChildren = nextRenderedChildren;

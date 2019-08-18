@@ -2,7 +2,7 @@
 
 const minimatch = require('minimatch');
 const CLIEngine = require('eslint').CLIEngine;
-const listChangedFiles =  require('./listChangedFiles');
+const listChangedFiles = require('./listChangedFiles');
 
 const allPaths = ['**/*.js'];
 
