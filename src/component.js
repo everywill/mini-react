@@ -1,6 +1,6 @@
 import { get as getInstance } from './ReactInstanceMap';
 
-export class Component {
+class Component {
   constructor(props) {
     this.props = props;
     this.state = {};
@@ -18,3 +18,7 @@ export class Component {
     }
   }
 }
+
+Component.prototype.isReactComponent = true;
+
+export { Component };

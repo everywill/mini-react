@@ -63,12 +63,14 @@ class DOMComponent {
     const nextProps = nextElement.props;
     this.currentElement = nextElement;
 
+    // some existing properties removed
     Object.keys(prevProps).forEach(propName => {
       if (propName !== 'children' && !nextProps.hasOwnProperty(propName)) {
         node.removeAttribute(propName);
       }
     });
 
+    // update properties
     Object.keys(nextProps).forEach(propName => {
       if (propName !== 'children') {
         node.setAttribute(propName, nextProps[propName]);
@@ -93,6 +95,7 @@ class DOMComponent {
     for (let i = 0; i < nextChildren.length; i++) {
       const prevChild = prevRenderedChildren[i];
 
+      // some children new
       if (!prevChild) {
         const nextChild = instantiateComponent(nextChildren[i]);
         const newNode = nextChild.mount();
@@ -120,6 +123,7 @@ class DOMComponent {
       nextRenderedChildren.push(prevChild);
     }
 
+    // some children removed
     for (let j = nextChildren.length; j < prevChildren.length; j++) {
       const prevChild = prevRenderedChildren[j];
       const oldNode = prevChild.getHostNode();

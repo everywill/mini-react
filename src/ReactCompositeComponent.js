@@ -53,7 +53,7 @@ class CompositeComponent {
 
     const markUp = renderedComponent.mount();
 
-    if (publicInstance.componentDidMount) {
+    if (publicInstance && publicInstance.componentDidMount) {
       publicInstance.componentDidMount();
     }
 
@@ -72,6 +72,7 @@ class CompositeComponent {
     renderedComponent.unmount();
   }
 
+  // update
   receive(nextElement) {
     this._rendering = true;
 
@@ -113,6 +114,7 @@ class CompositeComponent {
         nextRenderedElement = type(nextProps);
       }
 
+      // type相同
       if (prevRenderedElement.type === nextRenderedElement.type) {
         prevRenderedComponent.receive(nextRenderedElement);
         return;
@@ -120,6 +122,7 @@ class CompositeComponent {
 
       const prevNode = prevRenderedComponent.getHostNode();
 
+      // type不同
       prevRenderedComponent.unmount();
       const nextRenderedComponent = instantiateComponent(nextRenderedElement);
       const nextNode = nextRenderedComponent.mount();
