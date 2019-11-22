@@ -176,6 +176,9 @@ function createTextElement(value) {
   return createElement(TEXT_ELEMENT, { nodeValue: value });
 }
 
+const isListener = name => name.startsWith('on');
+const isAttribute = name => !isListener(name) && name !== 'children';
+
 class DOMComponent {
   constructor(element) {
     this.currentElement = element;
@@ -209,8 +212,12 @@ class DOMComponent {
       node = document.createElement(type);
 
       Object.keys(props).forEach(propName => {
-        if (propName !== 'children') {
-          node.setAttribute(propName.replace('Name', ''), props[propName]);
+        if (isListener(propName)) {
+          const eventType = propName.toLowerCase().substring(2);
+          node.addEventListener(eventType, props[propName]);
+        }
+        if (isAttribute(propName)) {
+          node[propName] = props[propName];
         }
       });
     }
@@ -240,20 +247,27 @@ class DOMComponent {
 
     // some existing properties removed
     Object.keys(prevProps).forEach(propName => {
-      if (propName !== 'children' && !nextProps.hasOwnProperty(propName)) {
-        node.removeAttribute(propName.replace('Name', ''));
+      if (propName !== 'children') {
+        if (isListener(propName)) {
+          const eventType = propName.toLowerCase().substring(2);
+          node.removeEventListener(eventType, prevProps[propName]);
+        }
+        if (isAttribute(propName) && !nextProps.hasOwnProperty(propName)) {
+          node[propName] = null;
+        }
       }
     });
 
     // update properties
     Object.keys(nextProps).forEach(propName => {
       if (propName !== 'children') {
-        if (propName === 'nodeValue') {
-          node[propName] = nextProps[propName];
-        } else {
-          node.setAttribute(propName.replace('Name', ''), nextProps[propName]);
+        if (isListener(propName)) {
+          const eventType = propName.toLowerCase().substring(2);
+          node.addEventListener(eventType, nextProps[propName]);
         }
-
+        if (isAttribute(propName)) {
+          node[propName] = nextProps[propName];
+        }
       }
     });
 
