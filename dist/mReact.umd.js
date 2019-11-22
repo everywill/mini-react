@@ -209,14 +209,14 @@
 
       let node;
 
-      if (type === 'TEXT_ELEMENT') {
+      if (type === TEXT_ELEMENT) {
         node = document.createTextNode(props.nodeValue);
       } else {
         node = document.createElement(type);
 
         Object.keys(props).forEach(propName => {
           if (propName !== 'children') {
-            node.setAttribute(propName, props[propName]);
+            node.setAttribute(propName.replace('Name', ''), props[propName]);
           }
         });
       }
@@ -247,14 +247,19 @@
       // some existing properties removed
       Object.keys(prevProps).forEach(propName => {
         if (propName !== 'children' && !nextProps.hasOwnProperty(propName)) {
-          node.removeAttribute(propName);
+          node.removeAttribute(propName.replace('Name', ''));
         }
       });
 
       // update properties
       Object.keys(nextProps).forEach(propName => {
         if (propName !== 'children') {
-          node.setAttribute(propName, nextProps[propName]);
+          if (propName === 'nodeValue') {
+            node[propName] = nextProps[propName];
+          } else {
+            node.setAttribute(propName.replace('Name', ''), nextProps[propName]);
+          }
+
         }
       });
 
