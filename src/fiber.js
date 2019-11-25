@@ -13,14 +13,16 @@ export const updateQueue = [];
 let nextUnitOfWork = null;
 let pendingCommit = null;
 
-function performWork(deadline) {
+export function performWork(deadline) {
   workLoop(deadline);
+  // start another requestIdleCallback if any work left
   if (nextUnitOfWork || updateQueue.length > 0) {
     requestIdleCallback(performWork);
   }
 }
 
 function workLoop(deadline) {
+  // work in one idle
   if (!nextUnitOfWork) {
     resetNextUnitOfWork();
   }
@@ -34,6 +36,45 @@ function workLoop(deadline) {
 
   if (pendingCommit) {
     commitAllWork(pendingCommit);
+  }
+}
+
+function performUnitOfWork(wipFiber) {
+  // build children of this wipFiber
+  beginWork(wipFiber);
+  if (wipFiber.child) {
+    return wipFiber.child;
+  }
+
+
+  let uow = wipFiber;
+  while (uow) {
+    // complete current wipFiber when no child built
+    completeWork(uow);
+    if (uow.sibling) {
+      return uow.sibling;
+    }
+    uow = uow.parent
+  }
+}
+
+function completeWork(fiber) {
+  if (fiber.parent) {
+    const childEffects = fiber.effects || [];
+    const thisEffect = fiber.effectTag !== null ? [fiber] : [];
+    const parentEffects = fiber.parent.effects || [];
+
+    fiber.parent.effects = parentEffects.concat(childEffects, thisEffect);
+  } else {
+    pendingCommit = fiber;
+  }
+}
+
+function beginWork(wipFiber) {
+  if (wipFiber.tag === CLASS_COMPONENT) {
+    updateClassComponent(wipFiber);
+  } else {
+    updateHostComponent(wipFiber);
   }
 }
 
@@ -85,35 +126,6 @@ function commitDeletion(fiber, domParent) {
   }
 }
 
-function performUnitOfWork(wipFiber) {
-  beginWork(wipFiber);
-  if (wipFiber.child) {
-    return wipFiber.child;
-  }
-
-  // complete current wipFiber when no child
-  let uow = wipFiber;
-  while (uow) {
-    completeWork(uow);
-    if (uow.sibling) {
-      return uow.sibling;
-    }
-    uow = uow.parent
-  }
-}
-
-function completeWork(fiber) {
-  if (fiber.parent) {
-    const childEffects = fiber.effects || [];
-    const thisEffect = fiber.effectTag !== null ? [fiber] : [];
-    const parentEffects = fiber.parent.effects || [];
-
-    fiber.parent.effects = parentEffects.concat(childEffects, thisEffect);
-  } else {
-    pendingCommit = fiber;
-  }
-}
-
 function resetNextUnitOfWork() {
   const update = updateQueue.shift();
 
@@ -146,10 +158,4 @@ function getRoot(fiber) {
   return node;
 }
 
-function beginWork(wipFiber) {
-  if (wipFiber.tag === CLASS_COMPONENT) {
-    updateClassComponent(wipFiber);
-  } else {
-    updateHostComponent(wipFiber);
-  }
-}
+
