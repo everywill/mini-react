@@ -1,3 +1,5 @@
+import { TEXT_ELEMENT } from './element';
+
 const isListener = name => name.startsWith('on');
 const isAttribute = name => !isListener(name) && name !== 'children';
 
@@ -23,6 +25,12 @@ export function updateDomProperties(node, prevProps, nextProps) {
       node[propName] = nextProps[propName];
     }
   })
+}
+
+export function createDomElement(element) {
+  return element.type === TEXT_ELEMENT
+    ?  document.createTextNode(element.props.nodeValue)
+    : document.createElement(element.type);
 }
 
 export function appendChild(node, childNode) {

@@ -59,6 +59,10 @@ function performUnitOfWork(wipFiber) {
 }
 
 function completeWork(fiber) {
+  if (fiber.tag === CLASS_COMPONENT) {
+    fiber.stateNode.__fiber = fiber;
+  }
+
   if (fiber.parent) {
     const childEffects = fiber.effects || [];
     const thisEffect = fiber.effectTag !== null ? [fiber] : [];

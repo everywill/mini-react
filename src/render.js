@@ -1,4 +1,4 @@
-import { updateQueue, performWork HOST_ROOT, CLASS_COMPONENT } from './fiber';
+import { updateQueue, performWork, HOST_ROOT, CLASS_COMPONENT } from './fiber';
 
 export function render(elements, container) {
   updateQueue.push({

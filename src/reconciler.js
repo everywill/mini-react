@@ -1,5 +1,6 @@
 import { HOST_COMPONENT, CLASS_COMPONENT } from './fiber';
 import { createInstance } from './component';
+import { createDomElement, updateDomProperties } from './dom-utils';
 
 // effect tags
 export const PLACEMENT = 1;
@@ -39,7 +40,7 @@ function cloneChildFibers(parentFiber) {
 
 export function updateClassComponent(wipFiber) {
   let instance = wipFiber.stateNode;
-  if (instance === null) {
+  if (!instance) {
     // first render
     instance = wipFiber.stateNode = createInstance(wipFiber);
   } else if (wipFiber.props === instance.props && !wipFiber.partialState) {
@@ -56,6 +57,14 @@ export function updateClassComponent(wipFiber) {
 }
 
 export function updateHostComponent(wipFiber) {
+  if (!wipFiber.stateNode) {
+    wipFiber.stateNode = createDomElement(wipFiber);
+  }
+  const prevProps = wipFiber.alternate && wipFiber.alternate.props;
+  const props = wipFiber.props;
+
+  updateDomProperties(wipFiber.stateNode, prevProps || [], props || []);
+
   const newChildElements = wipFiber.props.children;
   reconcileChildrenArray(wipFiber, newChildElements);
 }
@@ -104,10 +113,10 @@ function reconcileChildrenArray(wipFiber, newChildElements) {
       wipFiber.effects.push(oldChildFiber);
     }
 
-    if (index == 0) {
+    if (index === 0) {
       // link first newChildFiber to parent
       wipFiber.child = newChildFiber;
-    } else if (prevFiber && element) {
+    } else if (prevChildFiber && element) {
       // link siblings
       prevChildFiber.sibling = newChildFiber;
     }
