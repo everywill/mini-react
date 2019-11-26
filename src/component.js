@@ -11,6 +11,8 @@ export class Component {
   }
 }
 
+Component.prototype.isReactComponent = true;
+
 export function createInstance(wipFiber) {
   const instance = new wipFiber.type(wipFiber.props);
   instance.__fiber = wipFiber;

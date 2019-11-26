@@ -1,4 +1,4 @@
-import { HOST_COMPONENT, CLASS_COMPONENT } from './fiber';
+import { HOST_COMPONENT, CLASS_COMPONENT, FUNCTION_COMPONENT } from './fiber';
 import { createInstance } from './component';
 import { createDomElement, updateDomProperties } from './dom-utils';
 
@@ -6,6 +6,13 @@ import { createDomElement, updateDomProperties } from './dom-utils';
 export const PLACEMENT = 1;
 export const DELETION = 2;
 export const UPDATE = 3;
+
+function isClass(type) {
+  return (
+    Boolean(type.prototype) &&
+    Boolean(type.prototype.isReactComponent)
+  );
+}
 
 function cloneChildFibers(parentFiber) {
   const oldParentFiber = parentFiber.alternate;
@@ -56,6 +63,11 @@ export function updateClassComponent(wipFiber) {
   reconcileChildrenArray(wipFiber, newChildElements);
 }
 
+export function updateFunctionComponent(wipFiber) {
+  const newChildElements = wipFiber.type(wipFiber.props);
+  reconcileChildrenArray(wipFiber, newChildElements);
+}
+
 export function updateHostComponent(wipFiber) {
   if (!wipFiber.stateNode) {
     wipFiber.stateNode = createDomElement(wipFiber);
@@ -99,7 +111,8 @@ function reconcileChildrenArray(wipFiber, newChildElements) {
       // type changes and there is a element, place a newChildFiber
       newChildFiber = {
         type: element.type,
-        tag: typeof element.type === 'string' ? HOST_COMPONENT : CLASS_COMPONENT,
+        tag: typeof element.type === 'string'
+          ? HOST_COMPONENT : (isClass(element.type) ? CLASS_COMPONENT : FUNCTION_COMPONENT),
         props: element.props,
         parent: wipFiber,
         effectTag: PLACEMENT,

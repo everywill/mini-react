@@ -1,9 +1,10 @@
-import { updateHostComponent, updateClassComponent } from './reconciler';
+import { updateHostComponent, updateClassComponent, updateFunctionComponent } from './reconciler';
 import { PLACEMENT, UPDATE, DELETION } from './reconciler';
 import { appendChild,removeChild, updateDomProperties } from './dom-utils';
 
 export const HOST_COMPONENT = 'host';
 export const CLASS_COMPONENT = 'class';
+export const FUNCTION_COMPONENT = 'function';
 export const HOST_ROOT = 'root';
 
 const ENOUGH_TIME = 1;
@@ -34,6 +35,7 @@ function workLoop(deadline) {
     shouldYield = deadline.timeRemaining() < ENOUGH_TIME;
   }
 
+  // should not be interrupted
   if (pendingCommit) {
     commitAllWork(pendingCommit);
   }
@@ -77,6 +79,8 @@ function completeWork(fiber) {
 function beginWork(wipFiber) {
   if (wipFiber.tag === CLASS_COMPONENT) {
     updateClassComponent(wipFiber);
+  } else if (wipFiber.tag === FUNCTION_COMPONENT){
+    updateFunctionComponent(wipFiber);
   } else {
     updateHostComponent(wipFiber);
   }
@@ -94,7 +98,8 @@ function commitWork(fiber) {
   }
 
   let domParentFiber = fiber.parent;
-  while(domParentFiber.tag === CLASS_COMPONENT) {
+  while(domParentFiber.tag === CLASS_COMPONENT || domParentFiber.tag === FUNCTION_COMPONENT) {
+    // find the nearest dom
     domParentFiber = domParentFiber.parent;
   }
 
