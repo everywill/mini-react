@@ -10,7 +10,7 @@ export function render(elements, container) {
   requestIdleCallback(performWork);
 }
 
-export function scheduleUpdate(instance, partialState) {
+export function scheduleClassUpdate(instance, partialState) {
   updateQueue.push({
     from: CLASS_COMPONENT,
     instance,
@@ -19,3 +19,5 @@ export function scheduleUpdate(instance, partialState) {
 
   requestIdleCallback(performWork);
 }
+
+export function scheduleHooksUpdate() {}

@@ -15,13 +15,10 @@ let nextUnitOfWork = null;
 let pendingCommit = null;
 
 export function performWork(deadline) {
-  debugger
   workLoop(deadline);
   // start another requestIdleCallback if any work left
   if (nextUnitOfWork || updateQueue.length > 0) {
     requestIdleCallback(performWork);
-    console.log('requestIdleCallback has been called again');
-    console.log(nextUnitOfWork);
   }
 }
 
@@ -90,8 +87,6 @@ function beginWork(wipFiber) {
 }
 
 function commitAllWork(fiber) {
-  console.log('commitAllWork');
-  console.log(nextUnitOfWork);
   fiber.effects.forEach(f => commitWork(f));
   fiber.stateNode._rootContainerFiber = fiber;
   pendingCommit = null;
@@ -113,7 +108,7 @@ function commitWork(fiber) {
   if (fiber.effectTag === PLACEMENT) {
     commitPlacement(fiber, domParent);
   } else if (fiber.effectTag === UPDATE) {
-    updateDomProperties(fiber.stateNode, fiber.alternate.props, fiber.props);
+    commitUpdate(fiber);
   } else if (fiber.effectTag === DELETION) {
     commitDeletion(fiber, domParent);
   }
@@ -134,7 +129,7 @@ function commitUpdate(fiber) {
   if (fiber.tag === HOST_COMPONENT) {
     updateDomProperties(fiber.stateNode, fiber.alternate.props, fiber.props);
   } else if (fiber.tag === CLASS_COMPONENT) {
-    const instance = fiber.instance;
+    const instance = fiber.stateNode;
     if (instance.componentDidUpdate) {
       instance.componentDidUpdate();
     }

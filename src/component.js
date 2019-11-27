@@ -1,4 +1,4 @@
-import { scheduleUpdate } from './render';
+import { scheduleClassUpdate } from './render';
 
 export class Component {
   constructor(props) {
@@ -7,7 +7,7 @@ export class Component {
   }
 
   setState(partialState) {
-    scheduleUpdate(this, partialState);
+    scheduleClassUpdate(this, partialState);
   }
 }
 
