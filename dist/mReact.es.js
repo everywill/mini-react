@@ -26,6 +26,8 @@ class Component {
   }
 }
 
+Component.prototype.isReactComponent = true;
+
 function createInstance(wipFiber) {
   const instance = new wipFiber.type(wipFiber.props);
   instance.__fiber = wipFiber;
@@ -78,6 +80,13 @@ const PLACEMENT = 1;
 const DELETION = 2;
 const UPDATE = 3;
 
+function isClass(type) {
+  return (
+    Boolean(type.prototype) &&
+    Boolean(type.prototype.isReactComponent)
+  );
+}
+
 function cloneChildFibers(parentFiber) {
   const oldParentFiber = parentFiber.alternate;
   if (!oldParentFiber.child) {
@@ -127,6 +136,11 @@ function updateClassComponent(wipFiber) {
   reconcileChildrenArray(wipFiber, newChildElements);
 }
 
+function updateFunctionComponent(wipFiber) {
+  const newChildElements = wipFiber.type(wipFiber.props);
+  reconcileChildrenArray(wipFiber, newChildElements);
+}
+
 function updateHostComponent(wipFiber) {
   if (!wipFiber.stateNode) {
     wipFiber.stateNode = createDomElement(wipFiber);
@@ -170,7 +184,8 @@ function reconcileChildrenArray(wipFiber, newChildElements) {
       // type changes and there is a element, place a newChildFiber
       newChildFiber = {
         type: element.type,
-        tag: typeof element.type === 'string' ? HOST_COMPONENT : CLASS_COMPONENT,
+        tag: typeof element.type === 'string'
+          ? HOST_COMPONENT : (isClass(element.type) ? CLASS_COMPONENT : FUNCTION_COMPONENT),
         props: element.props,
         parent: wipFiber,
         effectTag: PLACEMENT,
@@ -206,6 +221,7 @@ function arrify(val) {
 
 const HOST_COMPONENT = 'host';
 const CLASS_COMPONENT = 'class';
+const FUNCTION_COMPONENT = 'function';
 const HOST_ROOT = 'root';
 
 const ENOUGH_TIME = 1;
@@ -236,6 +252,7 @@ function workLoop(deadline) {
     shouldYield = deadline.timeRemaining() < ENOUGH_TIME;
   }
 
+  // should not be interrupted
   if (pendingCommit) {
     commitAllWork(pendingCommit);
   }
@@ -279,6 +296,8 @@ function completeWork(fiber) {
 function beginWork(wipFiber) {
   if (wipFiber.tag === CLASS_COMPONENT) {
     updateClassComponent(wipFiber);
+  } else if (wipFiber.tag === FUNCTION_COMPONENT){
+    updateFunctionComponent(wipFiber);
   } else {
     updateHostComponent(wipFiber);
   }
@@ -296,7 +315,8 @@ function commitWork(fiber) {
   }
 
   let domParentFiber = fiber.parent;
-  while(domParentFiber.tag === CLASS_COMPONENT) {
+  while(domParentFiber.tag === CLASS_COMPONENT || domParentFiber.tag === FUNCTION_COMPONENT) {
+    // find the nearest dom
     domParentFiber = domParentFiber.parent;
   }
 

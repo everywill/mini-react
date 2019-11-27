@@ -50,9 +50,14 @@ export function updateClassComponent(wipFiber) {
   if (!instance) {
     // first render
     instance = wipFiber.stateNode = createInstance(wipFiber);
-  } else if (wipFiber.props === instance.props && !wipFiber.partialState) {
-    cloneChildFibers(wipFiber);
-    return;
+  }
+  // else if (wipFiber.props === instance.props && !wipFiber.partialState) {
+  //   cloneChildFibers(wipFiber);
+  //   return;
+  // }
+  else {
+    // follow-up render
+
   }
 
   instance.props = wipFiber.props;
