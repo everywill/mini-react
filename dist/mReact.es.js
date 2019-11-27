@@ -86,6 +86,7 @@ class CompositeComponent {
     const prevRenderedComponent = this.renderedComponent;
     const prevRenderedElement = prevRenderedComponent.currentElement;
 
+    // equation means updating is from setState
     const willReceive = this.currentElement !== nextElement;
 
     this.currentElement = nextElement;
@@ -167,7 +168,7 @@ function createElement(type, config, ...args) {
   const hasChildren = args.length > 0;
   const rawChildren = hasChildren ? [].concat(...args) : [];
   props.children = rawChildren
-    .filter(c => c != null && c !== false)
+    .filter(c => Boolean(c))
     .map(c => c instanceof Object ? c : createTextElement(c));
   return { type, props };
 }
@@ -247,27 +248,23 @@ class DOMComponent {
 
     // some existing properties removed
     Object.keys(prevProps).forEach(propName => {
-      if (propName !== 'children') {
-        if (isListener(propName)) {
-          const eventType = propName.toLowerCase().substring(2);
-          node.removeEventListener(eventType, prevProps[propName]);
-        }
-        if (isAttribute(propName) && !nextProps.hasOwnProperty(propName)) {
-          node[propName] = null;
-        }
+      if (isListener(propName)) {
+        const eventType = propName.toLowerCase().substring(2);
+        node.removeEventListener(eventType, prevProps[propName]);
+      }
+      if (isAttribute(propName) && !nextProps.hasOwnProperty(propName)) {
+        node[propName] = null;
       }
     });
 
     // update properties
     Object.keys(nextProps).forEach(propName => {
-      if (propName !== 'children') {
-        if (isListener(propName)) {
-          const eventType = propName.toLowerCase().substring(2);
-          node.addEventListener(eventType, nextProps[propName]);
-        }
-        if (isAttribute(propName)) {
-          node[propName] = nextProps[propName];
-        }
+      if (isListener(propName)) {
+        const eventType = propName.toLowerCase().substring(2);
+        node.addEventListener(eventType, nextProps[propName]);
+      }
+      if (isAttribute(propName)) {
+        node[propName] = nextProps[propName];
       }
     });
 

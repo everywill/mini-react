@@ -5,7 +5,7 @@ export function createElement(type, config, ...args) {
   const hasChildren = args.length > 0;
   const rawChildren = hasChildren ? [].concat(...args) : [];
   props.children = rawChildren
-    .filter(c => c != null && c !== false)
+    .filter(c => Boolean(c))
     .map(c => c instanceof Object ? c : createTextElement(c));
   return { type, props };
 }
