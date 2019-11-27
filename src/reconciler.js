@@ -48,17 +48,36 @@ function cloneChildFibers(parentFiber) {
 export function updateClassComponent(wipFiber) {
   let instance = wipFiber.stateNode;
   if (!instance) {
-    // first render
+    // first-time rendering
     instance = wipFiber.stateNode = createInstance(wipFiber);
+    if (instance.componentWillMount) {
+      instance.componentWillMount();
+    }
   }
-  // else if (wipFiber.props === instance.props && !wipFiber.partialState) {
-  //   cloneChildFibers(wipFiber);
-  //   return;
-  // }
-  else {
-    // follow-up render
-
+  else if (wipFiber.props === instance.props && !wipFiber.partialState) {
+    cloneChildFibers(wipFiber);
+    return;
   }
+  // else {
+  //   // subsequent rendering
+  //   if (instance.componentWillReceiveProps) {
+  //     instance.componentWillReceiveProps(wipFiber.props);
+  //   }
+  //   let shouldUpdate = true;
+  //   if (instance.shouldComponentUpdate) {
+  //     shouldUpdate = instance.shouldComponentUpdate(
+  //       wipFiber.props,
+  //       Object.assign({}, instance.state, wipFiber.partialState)
+  //     );
+  //   }
+  //   if (shouldUpdate) {
+  //     if (instance.componentWillUpdate) {
+  //       instance.componentWillUpdate(wipFiber.props);
+  //     }
+  //   } else {
+  //     cloneChildFibers(wipFiber);
+  //     return;
+  //   }
 
   instance.props = wipFiber.props;
   instance.state = Object.assign({}, instance.state, wipFiber.partialState);
@@ -93,7 +112,7 @@ function reconcileChildrenArray(wipFiber, newChildElements) {
   let oldChildFiber = wipFiber.alternate ? wipFiber.alternate.child : null;
   let newChildFiber = null;
 
-  while (index < elements.length || oldChildFiber !== null) {
+  while (index < elements.length || oldChildFiber) {
     const prevChildFiber = newChildFiber;
     const element = index < elements.length && elements[index];
     const sameType = oldChildFiber && element && oldChildFiber.type === element.type;
@@ -148,5 +167,5 @@ function reconcileChildrenArray(wipFiber, newChildElements) {
 }
 
 function arrify(val) {
-  return val === null ? [] : Array.isArray(val) ? val : [val];
+  return !val ? [] : Array.isArray(val) ? val : [val];
 }

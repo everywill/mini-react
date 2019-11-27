@@ -11,7 +11,7 @@
     const hasChildren = args.length > 0;
     const rawChildren = hasChildren ? [].concat(...args) : [];
     props.children = rawChildren
-      .filter(c => c !== null && c !== false)
+      .filter(c => Boolean(c) )
       .map(c => c instanceof Object ? c : createTextElement(c));
 
       return { type, props };
@@ -127,12 +127,36 @@
   function updateClassComponent(wipFiber) {
     let instance = wipFiber.stateNode;
     if (!instance) {
-      // first render
+      // first-time rendering
       instance = wipFiber.stateNode = createInstance(wipFiber);
-    } else if (wipFiber.props === instance.props && !wipFiber.partialState) {
+      if (instance.componentWillMount) {
+        instance.componentWillMount();
+      }
+    }
+    else if (wipFiber.props === instance.props && !wipFiber.partialState) {
       cloneChildFibers(wipFiber);
       return;
     }
+    // else {
+    //   // subsequent rendering
+    //   if (instance.componentWillReceiveProps) {
+    //     instance.componentWillReceiveProps(wipFiber.props);
+    //   }
+    //   let shouldUpdate = true;
+    //   if (instance.shouldComponentUpdate) {
+    //     shouldUpdate = instance.shouldComponentUpdate(
+    //       wipFiber.props,
+    //       Object.assign({}, instance.state, wipFiber.partialState)
+    //     );
+    //   }
+    //   if (shouldUpdate) {
+    //     if (instance.componentWillUpdate) {
+    //       instance.componentWillUpdate(wipFiber.props);
+    //     }
+    //   } else {
+    //     cloneChildFibers(wipFiber);
+    //     return;
+    //   }
 
     instance.props = wipFiber.props;
     instance.state = Object.assign({}, instance.state, wipFiber.partialState);
@@ -167,7 +191,7 @@
     let oldChildFiber = wipFiber.alternate ? wipFiber.alternate.child : null;
     let newChildFiber = null;
 
-    while (index < elements.length || oldChildFiber !== null) {
+    while (index < elements.length || oldChildFiber) {
       const prevChildFiber = newChildFiber;
       const element = index < elements.length && elements[index];
       const sameType = oldChildFiber && element && oldChildFiber.type === element.type;
@@ -222,7 +246,7 @@
   }
 
   function arrify(val) {
-    return val === null ? [] : Array.isArray(val) ? val : [val];
+    return !val ? [] : Array.isArray(val) ? val : [val];
   }
 
   const HOST_COMPONENT = 'host';
@@ -238,10 +262,13 @@
   let pendingCommit = null;
 
   function performWork(deadline) {
+    debugger
     workLoop(deadline);
     // start another requestIdleCallback if any work left
     if (nextUnitOfWork || updateQueue.length > 0) {
       requestIdleCallback(performWork);
+      console.log('requestIdleCallback has been called again');
+      console.log(nextUnitOfWork);
     }
   }
 
@@ -310,6 +337,8 @@
   }
 
   function commitAllWork(fiber) {
+    console.log('commitAllWork');
+    console.log(nextUnitOfWork);
     fiber.effects.forEach(f => commitWork(f));
     fiber.stateNode._rootContainerFiber = fiber;
     pendingCommit = null;
@@ -328,8 +357,8 @@
 
     const domParent = domParentFiber.stateNode;
 
-    if (fiber.effectTag === PLACEMENT && fiber.tag === HOST_COMPONENT) {
-      appendChild(domParent, fiber.stateNode);
+    if (fiber.effectTag === PLACEMENT) {
+      commitPlacement(fiber, domParent);
     } else if (fiber.effectTag === UPDATE) {
       updateDomProperties(fiber.stateNode, fiber.alternate.props, fiber.props);
     } else if (fiber.effectTag === DELETION) {
@@ -337,11 +366,28 @@
     }
   }
 
+  function commitPlacement(fiber, domParent) {
+    if (fiber.tag === HOST_COMPONENT) {
+      appendChild(domParent, fiber.stateNode);
+    } else if (fiber.tag === CLASS_COMPONENT) {
+      const instance = fiber.stateNode;
+      if (instance.componentDidMount) {
+        instance.componentDidMount();
+      }
+    }
+  }
+
   function commitDeletion(fiber, domParent) {
     let node = fiber;
     while (true) {
-      if (node.tag === CLASS_COMPONENT) {
+      if (node.tag !== HOST_COMPONENT) {
         node = node.child;
+        if (node.tag === CLASS_COMPONENT) {
+          const instance = node.stateNode;
+          if (node.componentWillUnmount) {
+            node.componentWillUnmount();
+          }
+        }
         continue;
       }
       removeChild(domParent, node.stateNode);
@@ -370,8 +416,9 @@
     }
 
     const root =
-      update.from =  update.dom._rootContainerFiber
-        ;
+      update.from === HOST_ROOT
+        ? update.dom._rootContainerFiber
+        : getRoot(update.instance.__fiber);
 
     nextUnitOfWork = {
       tag: HOST_ROOT,
@@ -379,6 +426,14 @@
       props: update.newProps || root.props,
       alternate: root,
     };
+  }
+
+  function getRoot(fiber) {
+    let node = fiber;
+    while (node.parent) {
+      node = node.parent;
+    }
+    return node;
   }
 
   function render(elements, container) {

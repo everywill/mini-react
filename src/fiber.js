@@ -15,10 +15,13 @@ let nextUnitOfWork = null;
 let pendingCommit = null;
 
 export function performWork(deadline) {
+  debugger
   workLoop(deadline);
   // start another requestIdleCallback if any work left
   if (nextUnitOfWork || updateQueue.length > 0) {
     requestIdleCallback(performWork);
+    console.log('requestIdleCallback has been called again');
+    console.log(nextUnitOfWork);
   }
 }
 
@@ -87,6 +90,8 @@ function beginWork(wipFiber) {
 }
 
 function commitAllWork(fiber) {
+  console.log('commitAllWork');
+  console.log(nextUnitOfWork);
   fiber.effects.forEach(f => commitWork(f));
   fiber.stateNode._rootContainerFiber = fiber;
   pendingCommit = null;
@@ -105,8 +110,8 @@ function commitWork(fiber) {
 
   const domParent = domParentFiber.stateNode;
 
-  if (fiber.effectTag === PLACEMENT && fiber.tag === HOST_COMPONENT) {
-    appendChild(domParent, fiber.stateNode);
+  if (fiber.effectTag === PLACEMENT) {
+    commitPlacement(fiber, domParent);
   } else if (fiber.effectTag === UPDATE) {
     updateDomProperties(fiber.stateNode, fiber.alternate.props, fiber.props);
   } else if (fiber.effectTag === DELETION) {
@@ -114,11 +119,39 @@ function commitWork(fiber) {
   }
 }
 
+function commitPlacement(fiber, domParent) {
+  if (fiber.tag === HOST_COMPONENT) {
+    appendChild(domParent, fiber.stateNode);
+  } else if (fiber.tag === CLASS_COMPONENT) {
+    const instance = fiber.stateNode;
+    if (instance.componentDidMount) {
+      instance.componentDidMount();
+    }
+  }
+}
+
+function commitUpdate(fiber) {
+  if (fiber.tag === HOST_COMPONENT) {
+    updateDomProperties(fiber.stateNode, fiber.alternate.props, fiber.props);
+  } else if (fiber.tag === CLASS_COMPONENT) {
+    const instance = fiber.instance;
+    if (instance.componentDidUpdate) {
+      instance.componentDidUpdate();
+    }
+  }
+}
+
 function commitDeletion(fiber, domParent) {
   let node = fiber;
   while (true) {
-    if (node.tag === CLASS_COMPONENT) {
+    if (node.tag !== HOST_COMPONENT) {
       node = node.child;
+      if (node.tag === CLASS_COMPONENT) {
+        const instance = node.stateNode;
+        if (node.componentWillUnmount) {
+          node.componentWillUnmount();
+        }
+      }
       continue;
     }
     removeChild(domParent, node.stateNode);
@@ -147,7 +180,7 @@ function resetNextUnitOfWork() {
   }
 
   const root =
-    update.from = HOST_ROOT
+    update.from === HOST_ROOT
       ? update.dom._rootContainerFiber
       : getRoot(update.instance.__fiber);
 
