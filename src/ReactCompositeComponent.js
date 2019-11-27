@@ -81,6 +81,7 @@ class CompositeComponent {
     const prevRenderedComponent = this.renderedComponent;
     const prevRenderedElement = prevRenderedComponent.currentElement;
 
+    // equation means updating is from setState
     const willReceive = this.currentElement !== nextElement;
 
     this.currentElement = nextElement;
