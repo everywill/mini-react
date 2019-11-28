@@ -1,4 +1,4 @@
-import { updateQueue, performWork, HOST_ROOT, CLASS_COMPONENT } from './fiber';
+import { updateQueue, performWork, HOST_ROOT, CLASS_COMPONENT, FUNCTION_COMPONENT } from './fiber';
 
 export function render(elements, container) {
   updateQueue.push({
@@ -20,4 +20,11 @@ export function scheduleClassUpdate(instance, partialState) {
   requestIdleCallback(performWork);
 }
 
-export function scheduleHooksUpdate() {}
+export function scheduleHooksUpdate(fiber) {
+  updateQueue.push({
+    from: FUNCTION_COMPONENT,
+    instance: {__fiber: fiber},
+  });
+
+  requestIdleCallback(performWork);
+}

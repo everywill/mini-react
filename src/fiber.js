@@ -194,5 +194,3 @@ function getRoot(fiber) {
   }
   return node;
 }
-
-

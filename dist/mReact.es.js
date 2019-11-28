@@ -160,9 +160,45 @@ function updateClassComponent(wipFiber) {
   reconcileChildrenArray(wipFiber, newChildElements);
 }
 
+let currentWipFiber = null;
+let hookIndex = null;
+
 function updateFunctionComponent(wipFiber) {
+  currentWipFiber = wipFiber;
+  hookIndex = 0;
+  wipFiber.hooks = [];
+
   const newChildElements = wipFiber.type(wipFiber.props);
   reconcileChildrenArray(wipFiber, newChildElements);
+}
+
+function useState(initial) {
+  const oldHook =
+    currentWipFiber.alternate &&
+    currentWipFiber.alternate.hooks &&
+    currentWipFiber.alternate.hooks[hookIndex];
+
+  const hook = {
+    state: oldHook ? oldHook.state : initial,
+    queue: [],
+  };
+
+  const actions = oldHook ? oldHook.queue : [];
+  actions.forEach(action => {
+    hook.state = action(hook.state);
+  });
+
+  const setState = action => {
+    if (typeof action !== 'function') {
+      action = function() {return action;};
+    }
+    hook.queue.push(action);
+    scheduleHooksUpdate(currentWipFiber);
+  };
+
+  currentWipFiber.hooks.push(hook);
+  hookIndex++;
+  return [hook.state, setState];
 }
 
 function updateHostComponent(wipFiber) {
@@ -456,11 +492,21 @@ function scheduleClassUpdate(instance, partialState) {
   requestIdleCallback(performWork);
 }
 
+function scheduleHooksUpdate(fiber) {
+  updateQueue.push({
+    from: FUNCTION_COMPONENT,
+    instance: {__fiber: fiber},
+  });
+
+  requestIdleCallback(performWork);
+}
+
 var index = {
   createElement,
   render,
   Component,
+  useState,
 };
 
 export default index;
-export { Component, createElement, render };
+export { Component, createElement, render, useState };

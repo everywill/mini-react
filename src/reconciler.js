@@ -1,6 +1,7 @@
 import { HOST_COMPONENT, CLASS_COMPONENT, FUNCTION_COMPONENT } from './fiber';
 import { createInstance } from './component';
 import { createDomElement, updateDomProperties } from './dom-utils';
+import { scheduleHooksUpdate } from './render';
 
 // effect tags
 export const PLACEMENT = 1;
@@ -87,9 +88,45 @@ export function updateClassComponent(wipFiber) {
   reconcileChildrenArray(wipFiber, newChildElements);
 }
 
+let currentWipFiber = null;
+let hookIndex = null;
+
 export function updateFunctionComponent(wipFiber) {
+  currentWipFiber = wipFiber;
+  hookIndex = 0;
+  wipFiber.hooks = [];
+
   const newChildElements = wipFiber.type(wipFiber.props);
   reconcileChildrenArray(wipFiber, newChildElements);
+}
+
+export function useState(initial) {
+  const oldHook =
+    currentWipFiber.alternate &&
+    currentWipFiber.alternate.hooks &&
+    currentWipFiber.alternate.hooks[hookIndex]
+
+  const hook = {
+    state: oldHook ? oldHook.state : initial,
+    queue: [],
+  }
+
+  const actions = oldHook ? oldHook.queue : [];
+  actions.forEach(action => {
+    hook.state = action(hook.state);
+  })
+
+  const setState = action => {
+    if (typeof action !== 'function') {
+      action = function() {return action;}
+    }
+    hook.queue.push(action);
+    scheduleHooksUpdate(currentWipFiber);
+  }
+
+  currentWipFiber.hooks.push(hook);
+  hookIndex++;
+  return [hook.state, setState];
 }
 
 export function updateHostComponent(wipFiber) {
